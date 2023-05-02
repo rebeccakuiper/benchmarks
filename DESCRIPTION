@@ -1,0 +1,19 @@
+Package: benchmarks
+Title: Benchmarks for GORIC(A) weights
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Rebecca M.",
+           family = "Kuiper",
+           role = c("aut", "cre"),
+           email = "r.m.kuiper@uu.nl",
+           comment = c(ORCID = "0000-0002-0267-5197"))
+Description: This package contains functions to calculate case-specific benchmarks for GORIC(A) weights, together with their 95\% confidence intervals (CIs).
+Depends: R (>= 4.2.0),
+	restriktor,
+	fastDummies,
+	MASS
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+LazyData: true
