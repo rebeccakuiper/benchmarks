@@ -28,16 +28,18 @@
 #' iter <- 100
 #'
 #' # Calculate case-specific benchmarks and their CIs
-#' benchmarks_goric_asymp <- benchmarks(My_goric_obj, pop.est, CI.iter = iter)
+#' benchmarks_goric_asymp <- benchmarks(goric.obj, pop.est, CI.iter = iter)
 #' benchmarks_goric_asymp$pop.estimates
 #' benchmarks_goric_asymp$benchmarks
 #' benchmarks_goric_asymp$CI.benchmarks
 #'
 
+# TO DO nu standaard complement, maar moet overnemen wat in data gedaan is!!!
+
 benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, CI.iter = 1000, seed.value = 123) {
 
   # When testing:
-  #goric_obj <- results1
+  #goric_obj <- My_goric_obj # results1
   #pop.est <-  # c(0, .2, .5, .8)
   #ratio.pop.means <- c(3, 2, 1)
   #other.N <- NULL
@@ -58,6 +60,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, CI.iter = 1000
 
   if(is.null(pop.est)){
     pop.est <- coef(goric_obj$model.org) # or: goric_obj$model.org$coefficients
+    # TO DO model.org bestaat alleen als niet est+vcov input!
   }
   colnames(pop.est) <- names(goric_obj$model.org$coefficients)
 
@@ -94,7 +97,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, CI.iter = 1000
       pop.est.CI <- est[i,]
       # Apply GORIC #
       #set.seed(123)
-      results.CI <- goric(pop.est.CI, VCOV = VCOV, constraints = hypos, comparison = "complement", type = "gorica")
+      results.CI <- goric(pop.est.CI, VCOV = VCOV, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
       benchmarks.CI[,i] <- matrix(results.CI$result[,7], ncol = 1)
     }
 
@@ -130,9 +133,24 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, CI.iter = 1000
   #benchmarks_all
 
 
+  # Error probability based on complement of preferred hypothesis in data
+  PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights) # could also be gorica.weights
+  pref.hypo <- goric_obj$result$model[PrefHypo]
+  if(PrefHypo > nr.hypos){
+    error.prob <- "The failsafe is preferred..."
+  }else{
+    H_pref <- hypos[[PrefHypo]]
+    # TO DO zie ANOVA fie
+    fit_data <- goric_obj$model.org
+    results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+    error.prob <- results.goric_pref$result$goric.weights[2]
+  }
+
+
   final <- list(#message = message,
     n.coef=k, N = samplesize,
     pop.estimates = pop.est, pop.VCOV = VCOV,
+    pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
     benchmarks = benchmarks_all,
     CI.benchmarks = CI.benchmarks_all)
 

@@ -43,7 +43,7 @@ pop.est <- My_pop_est
 iter <- 100
 
 # Calculate case-specific benchmarks and their CIs
-benchmarks_goric_asymp <- benchmarks(My_goric_obj, pop.est, CI.iter = iter)
+benchmarks_goric_asymp <- benchmarks(goric.obj, pop.est, CI.iter = iter)
 benchmarks_goric_asymp$pop.estimates
 benchmarks_goric_asymp$benchmarks
 benchmarks_goric_asymp$CI.benchmarks

@@ -47,7 +47,7 @@ ratio.pop.means <- c(3,2,1)
 iter <- 100
 
 # Calculate case-specific benchmarks and their CIs
-benchmarks_goric <- benchmarks_ANOVA(results1, pop.es, ratio.pop.means, CI.iter = iter)
+benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, CI.iter = iter)
 benchmarks_goric$pop.means
 benchmarks_goric$benchmarks
 benchmarks_goric$CI.benchmarks
@@ -55,7 +55,7 @@ benchmarks_goric$CI.benchmarks
 # An example to see what maximum value of the weights is.
 # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 pop.es <- c(.2, .5, .8)
-benchmarks_goric_1000 <- benchmarks_ANOVA(My_goric_obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
+benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
 benchmarks_goric_1000$benchmarks
 benchmarks_goric_1000$CI.benchmarks
 

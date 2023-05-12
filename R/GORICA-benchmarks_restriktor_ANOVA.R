@@ -30,7 +30,7 @@
 #' iter <- 100
 #'
 #' # Calculate case-specific benchmarks and their CIs
-#' benchmarks_goric <- benchmarks_ANOVA(results1, pop.es, ratio.pop.means, CI.iter = iter)
+#' benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, CI.iter = iter)
 #' benchmarks_goric$pop.means
 #' benchmarks_goric$benchmarks
 #' benchmarks_goric$CI.benchmarks
@@ -38,7 +38,7 @@
 #' # An example to see what maximum value of the weights is.
 #' # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 #' pop.es <- c(.2, .5, .8)
-#' benchmarks_goric_1000 <- benchmarks_ANOVA(My_goric_obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
+#' benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
 #' benchmarks_goric_1000$benchmarks
 #' benchmarks_goric_1000$CI.benchmarks
 #'
@@ -47,7 +47,7 @@
 benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, other.N = NULL, CI.iter = 1000, seed.value = 123) {
 
   # When testing:
-  #goric_obj <- results1
+  #goric_obj <- My_goric_obj # results1
   #pop.es <- 0.2 # c(0, .2) # c(0, .2, .5, .8)
   #ratio.pop.means <- c(3, 2, 1)
   #other.N <- NULL
@@ -59,13 +59,40 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   if(!any(class(goric_obj) == "con_goric")){
     return(paste0("The argument goric_obj should be of class con_goric (a goric object from restriktor); it belongs to ", class(goric_obj)))
   }
+  # TO DO werkt nu niet als class gelijk is aan: "con_gorica" "con_goric"
+  # Dan nl model.org niet bekend... lastig met var.e ook
 
 
-  # effect size
-  es <- pop.es
-  nr.es <- length(pop.es)
   # number of groups
   n.coef <- length(coef(goric_obj))
+
+  # subject per group
+  samplesize <- summary(goric_obj$model.org$model[,2])
+
+  # ES and ratio in data
+  # TO DO $b.unrestr en $Sigma zouden het ws moeten zijn, maar die geven dan NULL?
+  # Maar in $objectList hebben ze wel waardes....
+  means <- coef(goric_obj$model.org) # TO DO model.org bestaat alleen als niet est+vcov input!
+  var.e_data <- (sum(goric_obj$model.org$residuals^2) / (sum(samplesize) - n.coef)) # Dit werkt dan ook niet!
+  ES_data <- (1/sqrt(var.e_data)) * sqrt((1/n.coef) * sum((means - mean(means))^2))
+  #
+  ratio_data <- rep(NA, n.coef)
+  ratio_data[order(means) == 1] <- 1
+  ratio_data[order(means) == 2] <- 2
+  d <- means[order(means) == 2] - means[order(means) == 1]
+  #d
+  #ratio_data
+  for(i in 1:n.coef){
+    if(order(means)[i] > 2){
+      ratio_data[i] <- 1 + (means[i] - means[order(means) == 1])/d
+    }
+  }
+  #ratio_data
+
+
+  # effect size population
+  es <- pop.es
+  nr.es <- length(pop.es)
 
   # ratio population means
   if(is.null(ratio.pop.means)){
@@ -78,9 +105,6 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   # Hypotheses
   hypos <- goric_obj$hypotheses_usr
   nr.hypos <- dim(goric_obj$result)[1]
-
-  # subject per group
-  samplesize <- summary(goric_obj$model.org$model[,2])
 
   # Error variance
   # var.e <- var(goric_obj$model.org$residuals)
@@ -192,12 +216,16 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       ## Btw2: Not: sum(fit$residuals^2) / (sum(samplesize) - n.coef - 1)
 
       #set.seed(123)
-      results.goric <- goric(fit, constraints = hypos, comparison = "complement", type = "goric")
-      #results.gorica <- goric(fit, constraints = hypos, comparison = "complement", type = "gorica")
+      # GORICA or GORICA depending on what is done in data
+      results.goric <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = goric_obj$type)
+      # GORIC
+      #results.goric <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "goric")
+      # GORICA
+      #results.gorica <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
       #
       #Test
-      #goric(fit, constraints = hypos, comparison = "complement", type = "gorica")
-      #goric(coef(fit), VCOV = vcov(fit), constraints = hypos, comparison = "complement", type = "gorica")
+      #goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
+      #goric(coef(fit), VCOV = vcov(fit), constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
 
       goric[i,] <- results.goric$result[,7]
       #gorica[i,] <- results.goric$result[,7]
@@ -238,12 +266,33 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   #benchmarks_all
 
 
+  # Error probability based on complement of preferred hypothesis in data
+  PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
+  pref.hypo <- goric_obj$result$model[PrefHypo]
+  if(PrefHypo > nr.hypos){
+    error.prob <- "The failsafe is preferred..."
+  }else{
+    H_pref <- hypos[[PrefHypo]]
+    # Use goric, because ANOVA
+    # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
+    # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
+    #if()
+    fit_data <- goric_obj$model.org
+    results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+    error.prob <- results.goric_pref$result$goric.weights[2]
+  }
+
+
 
   final <- list(#message = message,
                 n.coef = n.coef,
                 group.size = samplesize,
+                means.data = means, ratio.means.data = ratio_data, ES.data = ES_data,
+                res.var.data = var.e_data,
                 pop.es = pop.es, pop.means = means_pop_all,
-                ratio.pop.means = ratio.pop.means, res.var = var.e,
+                ratio.pop.means = ratio.pop.means,
+                res.var.pop = var.e,
+                pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
                 benchmarks = benchmarks_all,
                 CI.benchmarks = CI.benchmarks_all)
 
