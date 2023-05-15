@@ -8,7 +8,7 @@ benchmarks(
   goric_obj,
   pop.est = NULL,
   other.N = NULL,
-  CI.iter = 1000,
+  iter = 1000,
   seed.value = 123
 )
 }
@@ -19,15 +19,15 @@ benchmarks(
 
 \item{other.N}{Optional. A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.}
 
-\item{CI.iter}{Optional. A scalar denoting the number of iterations used to determine the benchmarks weights and their 95\\% confidence intervals (CIs). By default, CI.iter = 1000. Notable, the higher CI.iter, the longer the computation time.}
+\item{iter}{Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.}
 
-\item{seed.value.}{Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase CI.iter.}
+\item{seed.value.}{Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.}
 }
 \value{
-The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates) and their 95\\% confidence intervals (CIs).
+The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates), based on the 5\\%, 35\\%, 50\\%, 65\\%, and 95\\% percentiles of GORIC(A) weights (using the sample size from the data).
 }
 \description{
-This function calculates case-specific benchmarks for GORIC(A) weights, together with their 95\\% confidence intervals (CIs).
+This function calculates case-specific benchmarks for GORIC(A) weights, assuming user-specified population parameter estimates.
 }
 \examples{
 
@@ -42,10 +42,10 @@ pop.est <- My_pop_est
 # Extra
 iter <- 100
 
-# Calculate case-specific benchmarks and their CIs
-benchmarks_goric_asymp <- benchmarks(goric.obj, pop.est, CI.iter = iter)
+# Calculate case-specific benchmarks
+benchmarks_goric_asymp <- benchmarks(goric.obj, pop.est, iter = iter)
+benchmarks_goric_asymp$error.prob.pref.hypo
 benchmarks_goric_asymp$pop.estimates
 benchmarks_goric_asymp$benchmarks
-benchmarks_goric_asymp$CI.benchmarks
 
 }

@@ -1,15 +1,15 @@
 #' Benchmarks for GORIC(A) weights
 #'
-#' This function calculates case-specific benchmarks for GORIC(A) weights, together with their 95\% confidence intervals (CIs).
+#' This function calculates case-specific benchmarks for GORIC(A) weights, assuming user-specified population parameter estimates.
 #'
 #' @param goric_obj An object from the goric function from the restriktor package. In this function, it is assumed that the GORIC is applied to an ANOVA with k group means.
 #' @param pop.es Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = .2. Benchmarks will be calculated for each of these value(s).
 #' @param ratio.pop.means Optional. A k-times-1 vector, denoting the relative difference between the k group means. Note that a ratio of c(3,2,1) gives the same as c(1,0,-1), since the consecutive relative differences are 1 in both ratios. every time minus same difference. By default, ratio.pop.means = NULL. In that case, the relative differences from the data are used.
 #' @param other.N Optional. A k-times-1 vector or a scalar to denote the group sizes, if you like to use others than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). If you specify a scalar, it is assumed that each group is of that size. By default, other.N = NULL. In that case, the group sizes from the data will be used.
-#' @param CI.iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights and their 95\% confidence intervals (CIs). By default, CI.iter = 1000. Notable, the higher CI.iter, the longer the computation time.
-#' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase CI.iter.
+#' @param iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.
+#' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.
 #'
-#' @return The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified effect sizes) and their 95\% confidence intervals (CIs).
+#' @return The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates), based on the 5\%, 35\%, 50\%, 65\%, and 95\% percentiles of GORIC(A) weights (using the sample size from the data).
 #' @importFrom restriktor goric
 #' @importFrom fastDummies dummy_cols
 # #' @export print.benchmarks_ANOVA
@@ -29,22 +29,20 @@
 #' # Extra
 #' iter <- 100
 #'
-#' # Calculate case-specific benchmarks and their CIs
-#' benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, CI.iter = iter)
+#' # Calculate case-specific benchmarks
+#' benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, iter = iter)
 #' benchmarks_goric$pop.means
 #' benchmarks_goric$benchmarks
-#' benchmarks_goric$CI.benchmarks
 #'
 #' # An example to see what maximum value of the weights is.
 #' # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 #' pop.es <- c(.2, .5, .8)
-#' benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
+#' benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, iter = iter)
 #' benchmarks_goric_1000$benchmarks
-#' benchmarks_goric_1000$CI.benchmarks
 #'
 
 
-benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, other.N = NULL, CI.iter = 1000, seed.value = 123) {
+benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, other.N = NULL, iter = 1000, seed.value = 123) {
 
   # When testing:
   #goric_obj <- My_goric_obj # results1
@@ -52,7 +50,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   #ratio.pop.means <- c(3, 2, 1)
   #other.N <- NULL
   # seed.value <- 123
-  # CI.iter <- 1000
+  # iter <- 1000
 
 
   # Check:
@@ -97,7 +95,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   # ratio population means
   if(is.null(ratio.pop.means)){
     # Then same as in data
-    ratio.pop.means <- coef(goric_obj$model.org)
+    ratio.pop.means <- ratio_data #coef(goric_obj$model.org)
   }else{
     if(length(ratio.pop.means) != n.coef) return(paste0("The argument ratio.pop.means should be of length ", n.coef, " (or NULL) but not of length ", length(ratio.pop.means)))
   }
@@ -175,7 +173,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
 
 
 
-  nr.iter <- CI.iter
+  nr.iter <- iter
 
   set.seed(seed.value)
   CI.benchmarks_all <- list(pop.es = pop.es)
@@ -186,7 +184,6 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
     #means_est <- matrix(NA, ncol = n.coef, nrow = nr.iter)
     #covmx_est <- array(NA, dim = c(n.coef, n.coef, nr.iter))
     goric <- matrix(NA, ncol = nr.hypos, nrow = nr.iter)
-    #gorica <- matrix(NA, ncol = nr.hypos, nrow = nr.iter)
     for(i in 1:nr.iter){
       # teller.es = 1; i = 1
 
@@ -218,36 +215,23 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       #set.seed(123)
       # GORICA or GORICA depending on what is done in data
       results.goric <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = goric_obj$type)
-      # GORIC
-      #results.goric <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "goric")
-      # GORICA
-      #results.gorica <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
       #
       #Test
       #goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
       #goric(coef(fit), VCOV = vcov(fit), constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
 
       goric[i,] <- results.goric$result[,7]
-      #gorica[i,] <- results.goric$result[,7]
     }
 
-    quant <- c(.05, .50, .95)
+    quant <- c(.05, .35, .50, .65, .95)
     CI.benchmarks_goric <- matrix(NA, nrow = nr.hypos, ncol = 1+1+length(quant))
-    #CI.benchmarks_gorica <- matrix(NA, nrow = nr.hypos, ncol = 1+1+length(quant))
     CI.benchmarks_goric[,1] <- goric_obj$result[,7] # so in sample
-    #CI.benchmarks_gorica[,1] <- goric_obj$result[,7] # NB dan geen gorica
-    CI.benchmarks_goric[,2] <- colMeans(goric)
-    #CI.benchmarks_gorica[,2] <- colMeans(gorica)
     for(j in 1:nr.hypos){
-      CI.benchmarks_goric[j,3:(2+length(quant))] <- quantile(goric[,j], quant)
-      #CI.benchmarks_gorica[j,3:(2+length(quant))] <- quantile(goric[,j], quant)
+      CI.benchmarks_goric[j,2:(1+length(quant))] <- quantile(goric[,j], quant)
     }
-    colnames(CI.benchmarks_goric) <- c("Sample", "Mean", "5%", "50%", "95%")
-    #colnames(CI.benchmarks_gorica) <- c("Sample", "Mean", "5%", "50%", "95%")
+    colnames(CI.benchmarks_goric) <- c("Sample", "5%", "35%", "50%", "65%", "95%")
     rownames(CI.benchmarks_goric) <- results.goric$result[,1]
-    #rownames(CI.benchmarks_gorica) <- results.gorica$result[,1]
     #CI.benchmarks_goric
-    #CI.benchmarks_gorica
 
     name <- paste0("pop.es = ", pop.es[teller.es])
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
@@ -255,31 +239,25 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
 
   }
 
-  benchmarks_all <- matrix(NA, ncol = 1+nr.es, nrow = nr.hypos)
-  benchmarks_all[,1] <- CI.benchmarks_all[[2]][,1]
-  for(teller.es in 1:nr.es){
-    #teller.es = 1
-    benchmarks_all[,1+teller.es] <- CI.benchmarks_all[[1+teller.es]][,2]
-  }
-  colnames(benchmarks_all) <- c("Sample", paste0("pop.es = ", pop.es))
-  rownames(benchmarks_all) <- goric_obj$result[,1]
-  #benchmarks_all
-
 
   # Error probability based on complement of preferred hypothesis in data
   PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
   pref.hypo <- goric_obj$result$model[PrefHypo]
-  if(PrefHypo > nr.hypos){
-    error.prob <- "The failsafe is preferred..."
+  if(nr.hypos == 2 & goric_obj$comparison == "complement"){
+    error.prob <- 1 - goric_obj$result$goric.weights[PrefHypo]
   }else{
-    H_pref <- hypos[[PrefHypo]]
-    # Use goric, because ANOVA
-    # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
-    # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
-    #if()
-    fit_data <- goric_obj$model.org
-    results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
-    error.prob <- results.goric_pref$result$goric.weights[2]
+    if(PrefHypo == nr.hypos){
+      error.prob <- "The failsafe is preferred..."
+    }else{
+      H_pref <- hypos[[PrefHypo]]
+      # Use goric, because ANOVA
+      # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
+      # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
+      #if()
+      fit_data <- goric_obj$model.org
+      results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+      error.prob <- results.goric_pref$result$goric.weights[2]
+    }
   }
 
 
@@ -293,8 +271,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
                 ratio.pop.means = ratio.pop.means,
                 res.var.pop = var.e,
                 pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
-                benchmarks = benchmarks_all,
-                CI.benchmarks = CI.benchmarks_all)
+                benchmarks = CI.benchmarks_all)
 
   class(final) <- c("benchmarks", "list")
   final

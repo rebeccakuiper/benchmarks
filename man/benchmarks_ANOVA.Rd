@@ -9,7 +9,7 @@ benchmarks_ANOVA(
   pop.es = 0.2,
   ratio.pop.means = NULL,
   other.N = NULL,
-  CI.iter = 1000,
+  iter = 1000,
   seed.value = 123
 )
 }
@@ -22,15 +22,15 @@ benchmarks_ANOVA(
 
 \item{other.N}{Optional. A k-times-1 vector or a scalar to denote the group sizes, if you like to use others than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). If you specify a scalar, it is assumed that each group is of that size. By default, other.N = NULL. In that case, the group sizes from the data will be used.}
 
-\item{CI.iter}{Optional. A scalar denoting the number of iterations used to determine the benchmarks weights and their 95\\% confidence intervals (CIs). By default, CI.iter = 1000. Notable, the higher CI.iter, the longer the computation time.}
+\item{iter}{Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.}
 
-\item{seed.value.}{Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase CI.iter.}
+\item{seed.value.}{Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.}
 }
 \value{
-The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified effect sizes) and their 95\\% confidence intervals (CIs).
+The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates), based on the 5\\%, 35\\%, 50\\%, 65\\%, and 95\\% percentiles of GORIC(A) weights (using the sample size from the data).
 }
 \description{
-This function calculates case-specific benchmarks for GORIC(A) weights, together with their 95\\% confidence intervals (CIs).
+This function calculates case-specific benchmarks for GORIC(A) weights, assuming user-specified population parameter estimates.
 }
 \examples{
 
@@ -46,17 +46,15 @@ ratio.pop.means <- c(3,2,1)
 # Extra
 iter <- 100
 
-# Calculate case-specific benchmarks and their CIs
-benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, CI.iter = iter)
+# Calculate case-specific benchmarks
+benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, iter = iter)
 benchmarks_goric$pop.means
 benchmarks_goric$benchmarks
-benchmarks_goric$CI.benchmarks
 
 # An example to see what maximum value of the weights is.
 # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 pop.es <- c(.2, .5, .8)
-benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, CI.iter = iter)
+benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, iter = iter)
 benchmarks_goric_1000$benchmarks
-benchmarks_goric_1000$CI.benchmarks
 
 }
