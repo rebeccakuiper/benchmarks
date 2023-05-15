@@ -224,7 +224,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
     }
 
     quant <- c(.05, .35, .50, .65, .95)
-    CI.benchmarks_goric <- matrix(NA, nrow = nr.hypos, ncol = 1+1+length(quant))
+    CI.benchmarks_goric <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
     CI.benchmarks_goric[,1] <- goric_obj$result[,7] # so in sample
     for(j in 1:nr.hypos){
       CI.benchmarks_goric[j,2:(1+length(quant))] <- quantile(goric[,j], quant)

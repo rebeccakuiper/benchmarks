@@ -77,7 +77,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   CI.benchmarks_all <- list(pop.es = pop.es)
   #
   quant <- c(.05, .35, .50, .65, .95)
-  CI.benchmarks <- matrix(NA, nrow = nr.hypos, ncol = 1+1+length(quant))
+  CI.benchmarks <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
   for(teller.es in 1:nr.es){
     #teller.es = 1
 
