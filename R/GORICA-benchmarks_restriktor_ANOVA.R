@@ -1,6 +1,6 @@
 #' Benchmarks for GORIC(A) weights
 #'
-#' This function calculates case-specific benchmarks for GORIC(A) weights, assuming user-specified population parameter estimates.
+#' This function calculates, for an ANOVA model, case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis, assuming user-specified population parameter estimates.
 #'
 #' @param goric_obj An object from the goric function from the restriktor package. In this function, it is assumed that the GORIC is applied to an ANOVA with k group means.
 #' @param pop.es Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = .2. Benchmarks will be calculated for each of these value(s).
@@ -9,7 +9,7 @@
 #' @param iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.
 #' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.
 #'
-#' @return The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates), based on the 5\%, 35\%, 50\%, 65\%, and 95\% percentiles of GORIC(A) weights (using the sample size from the data).
+#' @return The output comprises case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis (for each of the specified population estimates), based on the 5\%, 35\%, 50\%, 65\%, and 95\% percentiles (using the sample size from the data).
 #' @importFrom restriktor goric
 #' @importFrom fastDummies dummy_cols
 # #' @export print.benchmarks_ANOVA
@@ -32,13 +32,15 @@
 #' # Calculate case-specific benchmarks
 #' benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, iter = iter)
 #' benchmarks_goric$pop.means
-#' benchmarks_goric$benchmarks
+#' benchmarks_goric$benchmarks.weight
+#' benchmarks_goric$benchmarks.ratios
 #'
 #' # An example to see what maximum value of the weights is.
 #' # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 #' pop.es <- c(.2, .5, .8)
 #' benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, iter = iter)
-#' benchmarks_goric_1000$benchmarks
+#' benchmarks_goric_1000$benchmarks.weight
+#' benchmarks_goric_1000$benchmarks.ratios
 #'
 
 
@@ -59,7 +61,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   }
   # TO DO werkt nu niet als class gelijk is aan: "con_gorica" "con_goric"
   # Dan nl model.org niet bekend... lastig met var.e ook
-
+  # Test met veel $ $ of het wel lukt, zie   goric_obj$objectNames$ ...
 
   # number of groups
   n.coef <- length(coef(goric_obj))
@@ -103,6 +105,8 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   # Hypotheses
   hypos <- goric_obj$hypotheses_usr
   nr.hypos <- dim(goric_obj$result)[1]
+  PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
+  pref.hypo <- goric_obj$result$model[PrefHypo]
 
   # Error variance
   # var.e <- var(goric_obj$model.org$residuals)
@@ -174,16 +178,21 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
 
 
   nr.iter <- iter
-
   set.seed(seed.value)
-  CI.benchmarks_all <- list(pop.es = pop.es)
+  #
+  quant <- c(.05, .35, .50, .65, .95)
+  names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
+  #
+  CI.benchmarks_all <- NULL
+  CI.benchmarks_gw_all <- NULL
   for(teller.es in 1:nr.es){
     #teller.es = 1
     means_pop <- means_pop_all[teller.es, ]
 
     #means_est <- matrix(NA, ncol = n.coef, nrow = nr.iter)
     #covmx_est <- array(NA, dim = c(n.coef, n.coef, nr.iter))
-    goric <- matrix(NA, ncol = nr.hypos, nrow = nr.iter)
+    goric <- rep(NA, nr.iter)
+    gw <- matrix(NA, nrow = nr.hypos, ncol = iter)
     for(i in 1:nr.iter){
       # teller.es = 1; i = 1
 
@@ -220,34 +229,41 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       #goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
       #goric(coef(fit), VCOV = vcov(fit), constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
 
-      goric[i,] <- results.goric$result[,7]
+      goric[i] <- results.goric$result[PrefHypo,7]
+      gw[,i] <- results.goric$ratio.gw[PrefHypo,]
     }
 
-    quant <- c(.05, .35, .50, .65, .95)
-    CI.benchmarks_goric <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
-    CI.benchmarks_goric[,1] <- goric_obj$result[,7] # so in sample
+    CI.benchmarks_goric <- matrix(c(goric_obj$result[PrefHypo,7], quantile(goric, quant)), nrow = 1) # sample weight with calculated quantiles/percentiles
+    colnames(CI.benchmarks_goric) <- names_quant
+    rownames(CI.benchmarks_goric) <- pref.hypo
+    #
+    CI.benchmarks_gw <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
+    CI.benchmarks_gw[,1] <- goric_obj$ratio.gw[PrefHypo,] # so in sample
     for(j in 1:nr.hypos){
-      CI.benchmarks_goric[j,2:(1+length(quant))] <- quantile(goric[,j], quant)
+      CI.benchmarks_gw[j,2:(1+length(quant))] <- quantile(gw[j,], quant)
     }
-    colnames(CI.benchmarks_goric) <- c("Sample", "5%", "35%", "50%", "65%", "95%")
-    rownames(CI.benchmarks_goric) <- results.goric$result[,1]
+    colnames(CI.benchmarks_gw) <- names_quant
+    rownames(CI.benchmarks_gw) <- paste(pref.hypo, names(goric_obj$ratio.gw[PrefHypo,]))
+    #
     #CI.benchmarks_goric
+    #CI.benchmarks_gw
 
     name <- paste0("pop.es = ", pop.es[teller.es])
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
+    CI.benchmarks_gw_all[[name]] <- CI.benchmarks_gw
     #CI.benchmarks_all
+    #CI.benchmarks_gw_all
 
   }
 
 
   # Error probability based on complement of preferred hypothesis in data
-  PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
-  pref.hypo <- goric_obj$result$model[PrefHypo]
   if(nr.hypos == 2 & goric_obj$comparison == "complement"){
     error.prob <- 1 - goric_obj$result$goric.weights[PrefHypo]
   }else{
     if(PrefHypo == nr.hypos){
       error.prob <- "The failsafe is preferred..."
+      # # TO DO bepaal ook quantiles voor error prob - kan obv bovenstaande!
     }else{
       H_pref <- hypos[[PrefHypo]]
       # Use goric, because ANOVA
@@ -257,6 +273,9 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       fit_data <- goric_obj$model.org
       results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
       error.prob <- results.goric_pref$result$goric.weights[2]
+      #
+      # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
+      # Is het zinnig? Op zich zou error prob al zinnig moeten zijn immers....
     }
   }
 
@@ -271,7 +290,8 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
                 ratio.pop.means = ratio.pop.means,
                 res.var.pop = var.e,
                 pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
-                benchmarks = CI.benchmarks_all)
+                benchmarks.weight = CI.benchmarks_all,
+                benchmarks.ratios = CI.benchmarks_gw_all)
 
   class(final) <- c("benchmarks", "list")
   final

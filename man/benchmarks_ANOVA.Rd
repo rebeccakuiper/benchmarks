@@ -27,10 +27,10 @@ benchmarks_ANOVA(
 \item{seed.value.}{Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.}
 }
 \value{
-The output comprises case-specific benchmarks for GORIC(A) weights (for each of the specified population estimates), based on the 5\\%, 35\\%, 50\\%, 65\\%, and 95\\% percentiles of GORIC(A) weights (using the sample size from the data).
+The output comprises case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis (for each of the specified population estimates), based on the 5\\%, 35\\%, 50\\%, 65\\%, and 95\\% percentiles (using the sample size from the data).
 }
 \description{
-This function calculates case-specific benchmarks for GORIC(A) weights, assuming user-specified population parameter estimates.
+This function calculates, for an ANOVA model, case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis, assuming user-specified population parameter estimates.
 }
 \examples{
 
@@ -49,12 +49,14 @@ iter <- 100
 # Calculate case-specific benchmarks
 benchmarks_goric <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, iter = iter)
 benchmarks_goric$pop.means
-benchmarks_goric$benchmarks
+benchmarks_goric$benchmarks.weight
+benchmarks_goric$benchmarks.ratios
 
 # An example to see what maximum value of the weights is.
 # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
 pop.es <- c(.2, .5, .8)
 benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, iter = iter)
-benchmarks_goric_1000$benchmarks
+benchmarks_goric_1000$benchmarks.weight
+benchmarks_goric_1000$benchmarks.ratios
 
 }
