@@ -1,14 +1,15 @@
-#' Benchmarks for GORIC(A) weights
+#' Benchmarks for GORIC(A) weights and Posterior Model Probabilities
 #'
-#' This function calculates case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis, assuming user-specified population parameter estimates.
+#' This function calculates case-specific benchmarks for GORIC(A) weights and Posterior Model Probabilities.
 #'
-#' @param goric_obj An object from the goric function from the restriktor package. In this function, the GORIC or GORICA can be applied to every type of statistical model.
-#' @param pop.est Optional. A nr.es-times-k matrix of population values for the k parameters of interest, leading to nr.es sets of population values. By default, pop.est = NULL; then, the estimates from the sample will be used. Benchmarks will be calculated for each of these value(s).
-#' @param other.N Optional. A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.
-#' @param iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.
-#' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.
+#' @param goric_obj 
+#' @param pop.est Optional. By default, pop.est = NULL.
+#' @param scaling.est Optional. By default, scaling.est = 1. scaling.est = c(.5, 1, 2)
+#' @param other.N Optional. By default, other.N = NULL.
+#' @param CI Optional. By default, CI = TRUE.
+#' @param CI.iter Optional. By default, CI.iter = 1000.
 #'
-#' @return The output comprises case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis (for each of the specified population estimates), based on the 5\%, 35\%, 50\%, 65\%, and 95\% percentiles (using the sample size from the data).
+#' @return The output comprises, among other things, the Chi-bar-square weights and critical value for the Chi-bar-square statistic (if asked for) the Chi-bar-square statistic and corresponding p-value.
 #' @importFrom restriktor goric
 #' @importFrom MASS mvrnorm
 # #' @export print.benchmarks
@@ -18,54 +19,58 @@
 #'
 #' # library(benchmarks)
 #'
-#' # Input 'data'
-#' goric.obj <- My_goric_obj
-#'
-#' # Input w.r.t. population values
-#' pop.est <- My_pop_est
-#'
-#' # Extra
-#' iter <- 100
-#'
-#' # Calculate case-specific benchmarks
-#' benchmarks_goric_asymp <- benchmarks(goric.obj, pop.est, iter = iter)
-#' benchmarks_goric_asymp$error.prob.pref.hypo
-#' benchmarks_goric_asymp$pop.estimates
-#' benchmarks_goric_asymp$benchmarks.weight
-#' benchmarks_goric_asymp$benchmarks.ratios
+#' # TO DO Voorbeelden
+#' 
+#' # TO DO check of dit werkt - ms anova bekijken
+#' es_all <- c(0, .2, .5, .8)
+#' pop.est <- matrix(NA, nrow = length(es_all), ncol = k)
+#' rn <- c("No", "Small", "Medium", "Large")
+#' rownames(pop.est) <- rn
+#' for(j in 1:length(es_all)){
+#'   # j = 1
+#'   es_j <- es_all[j]
+#'   
+#'   i = 1:k
+#'   #compute equal difference scores, d, between the means
+#'   d =(2*sqrt(k)*es_j) / sqrt(sum((2*i-1-k)^2))
+#'   # compute first (read lowest) mean mu
+#'   mu.i = (-(k-1)*d) / 2
+#'   # compute k means
+#'   #means = c(mu.i, mu.i + 1:(k-1)*d) # 1:2:3:...:k-1:k
+#'   means_j = c(mu.i + (k-1):1*d, mu.i) # k:k-1:...:3:2:1
+#'   
+#'   pop.est[j,] <- means_j
+#' }
+#' colnames(pop.est) <- names(coef(fit))
 #'
 
-
-benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, seed.value = 123) {
+benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, CI.iter = 1000, seed.value = 123) {
 
   # When testing:
-  #goric_obj <- My_goric_obj # results1
-  #pop.est <- matrix(c(.22, .51, .83), nrow = 1)
+  #goric_obj <- results1
+  #pop.es <- 0.2 # c(0, .2) # c(0, .2, .5, .8)
+  #ratio.pop.means <- c(3, 2, 1)
   #other.N <- NULL
   # seed.value <- 123
-  # iter <- 1000
-
-
+  # CI.iter <- 1000
+  
+  
   # Check:
   if(!any(class(goric_obj) == "con_goric")){
     return(paste0("The argument goric_obj should be of class con_goric (a goric object from restriktor); it belongs to ", class(goric_obj)))
   }
-
+  
   hypos <- goric_obj$hypotheses_usr
   nr.hypos <- dim(goric_obj$result)[1]
-  PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
-  pref.hypo <- goric_obj$result$model[PrefHypo]
-
   n.coef <- length(coef(goric_obj))
   nr.es <- length(pop.est)/n.coef
-
-
+  
+  
   if(is.null(pop.est)){
     pop.est <- coef(goric_obj$model.org) # or: goric_obj$model.org$coefficients
-    # TO DO model.org bestaat alleen als niet est+vcov input!
   }
   colnames(pop.est) <- names(goric_obj$model.org$coefficients)
-
+  
   #n.coef <- length(b.ratios) # If one of the 2 dim's is 1 - always the case in lm?
   VCOV <- vcov(goric_obj$model.org)
   samplesize <- length(goric_obj$model.org$residuals) # If one of the 2 dim's is 1 - always the case in lm?
@@ -73,94 +78,77 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
     VCOV <- VCOV * samplesize / other.N
     samplesize <- other.N
   }
-
-
-  nr.iter <- iter
+  
+  
+  nr.iter <- CI.iter
   set.seed(seed.value)
+  CI.benchmarks_all <- list(pop.es = pop.es)
   #
-  quant <- c(.05, .35, .50, .65, .95)
-  names_quant <- c("Sample", "5%", "35%", "50%", "65%", "95%")
-  #
-  CI.benchmarks_all <- NULL
-  CI.benchmarks_gw_all <- NULL
+  quant <- c(.05, .50, .95)
+  CI.benchmarks <- matrix(NA, nrow = nr.hypos, ncol = 1+1+length(quant))
   for(teller.es in 1:nr.es){
     #teller.es = 1
-
-    est <- mvrnorm(iter, pop.est[teller.es,], VCOV)
+    
+    est <- mvrnorm(CI.iter, pop.est[teller.es,], VCOV)
     #
     # Test
     # var(est)
     # VCOV
-    # est_test <- mvrnorm(iter*100, pop.est, VCOV)
+    # est_test <- mvrnorm(CI.iter*100, pop.est, VCOV)
     # var(est_test)
     # Equals approx VCOV
-
-    goric <- rep(NA, nr.iter)
-    gw <- matrix(NA, nrow = nr.hypos, ncol = iter)
-    for(i in 1:iter){
+    
+    benchmarks.CI <- matrix(NA, nrow = nr.hypos, ncol = CI.iter)
+    for(i in 1:CI.iter){
       # i = 1
       pop.est.CI <- est[i,]
       # Apply GORIC #
-      #set.seed(123)
-      results.goric <- goric(pop.est.CI, VCOV = VCOV, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
-
-      goric[i] <- results.goric$result[PrefHypo,7]
-      gw[,i] <- results.goric$ratio.gw[PrefHypo,]
+      #set.seed(123) 
+      results.CI <- goric(pop.est.CI, VCOV = VCOV, constraints = hypos, comparison = "complement", type = "gorica")
+      benchmarks.CI[,i] <- matrix(results.CI$result[,7], ncol = 1)
     }
-
-    CI.benchmarks_goric <- matrix(c(goric_obj$result[PrefHypo,7], quantile(goric, quant)), nrow = 1) # sample weight with calculated quantiles/percentiles
-    colnames(CI.benchmarks_goric) <- names_quant
-    rownames(CI.benchmarks_goric) <- pref.hypo
-    #
-    CI.benchmarks_gw <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
-    CI.benchmarks_gw[,1] <- goric_obj$ratio.gw[PrefHypo,] # so in sample
+    
+    CI.benchmarks_s <- matrix(NA, nrow = nr.hypos, ncol = length(quant))
+    Mean <- matrix(NA, nrow = nr.hypos, ncol = 1)
     for(j in 1:nr.hypos){
-      CI.benchmarks_gw[j,2:(1+length(quant))] <- quantile(gw[j,], quant)
+      # j = 1
+      CI.benchmarks_s[j,] <- quantile(benchmarks.CI[j,], quant)
+      Mean[j,] <- mean(benchmarks.CI[j,])
     }
-    colnames(CI.benchmarks_gw) <- names_quant
-    rownames(CI.benchmarks_gw) <- paste(pref.hypo, names(goric_obj$ratio.gw[PrefHypo,]))
-    #
-    #CI.benchmarks_goric
-    #CI.benchmarks_gw
-
-    name <- paste0("nr.pop.est = ", teller.es)
-    CI.benchmarks_all[[name]] <- CI.benchmarks_goric
-    CI.benchmarks_gw_all[[name]] <- CI.benchmarks_gw
-    #CI.benchmarks_all
-    #CI.benchmarks_gw_all
+    #rownames(CI.benchmarks_s) <- results$result[,1]
+    #colnames(CI.benchmarks_s) <- c("5%", "50%", "95%")
+    
+    CI.benchmarks[,1] <- goric_obj$result[,7] # so in sample
+    CI.benchmarks[,2] <- Mean
+    CI.benchmarks[,3:(2+length(quant))] <- CI.benchmarks_s
+    rownames(CI.benchmarks) <- goric_obj$result[,1]
+    colnames(CI.benchmarks) <- c("Sample", "Mean", "5%", "50%", "95%")
+    
+    name <- paste0("pop.es = ", pop.es[teller.es])
+    CI.benchmarks_all[[name]] <- CI.benchmarks
   }
-
-
-  # Error probability based on complement of preferred hypothesis in data
-  # TO DO zie ANOVA fie
-  if(nr.hypos == 2 & goric_obj$comparison == "complement"){
-    error.prob <- 1 - goric_obj$result$goric.weights[PrefHypo]
-  }else{
-    if(PrefHypo == nr.hypos){
-      error.prob <- "The failsafe is preferred..."
-    }else{
-      H_pref <- hypos[[PrefHypo]]
-      # Use goric, because ANOVA
-      # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
-      # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
-      #if()
-      fit_data <- goric_obj$model.org
-      results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
-      error.prob <- results.goric_pref$result$goric.weights[2]
-    }
+  
+  
+  benchmarks_all <- matrix(NA, ncol = 1+nr.es, nrow = nr.hypos)
+  benchmarks_all[,1] <- CI.benchmarks_all[[2]][,1]
+  for(teller.es in 1:nr.es){
+    #teller.es = 1
+    benchmarks_all[,1+teller.es] <- CI.benchmarks_all[[1+teller.es]][,2]
   }
-
-
+  colnames(benchmarks_all) <- c("Sample", paste0("pop.es = ", pop.es))
+  rownames(benchmarks_all) <- goric_obj$result[,1]
+  #benchmarks_all
+  
+  
   final <- list(#message = message,
-    n.coef = n.coef, N = samplesize,
-    pop.estimates = pop.est, pop.VCOV = VCOV,
-    pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
-    benchmarks.weight = CI.benchmarks_all,
-    benchmarks.ratios = CI.benchmarks_gw_all)
-
-
+    n.coef=k, N = samplesize,
+    pop.estimates = pop.est, pop.VCOV = VCOV, 
+    benchmarks = benchmarks_all,
+    CI.benchmarks = CI.benchmarks_all)
+  
+  
   class(final) <- c("benchmarks", "list")
   final
-
+  
 } # end of function
 
