@@ -223,11 +223,11 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
 
       #set.seed(123)
       # GORICA or GORICA depending on what is done in data
-      results.goric <- goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = goric_obj$type)
+      results.goric <- goric(fit, hypotheses = hypos, comparison = goric_obj$comparison, type = goric_obj$type)
       #
       #Test
-      #goric(fit, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
-      #goric(coef(fit), VCOV = vcov(fit), constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
+      #goric(fit, hypotheses = hypos, comparison = goric_obj$comparison, type = "gorica")
+      #goric(coef(fit), VCOV = vcov(fit), hypotheses = hypos, comparison = goric_obj$comparison, type = "gorica")
 
       goric[i] <- results.goric$result[PrefHypo,7]
       gw[,i] <- results.goric$ratio.gw[PrefHypo,]
@@ -271,7 +271,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
       #if()
       fit_data <- goric_obj$model.org
-      results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+      results.goric_pref <- goric(fit_data, hypotheses = list(H_pref = H_pref), comparison = "complement", type = "goric")
       error.prob <- results.goric_pref$result$goric.weights[2]
       #
       # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
