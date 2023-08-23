@@ -58,7 +58,6 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   pref.hypo <- goric_obj$result$model[PrefHypo]
 
   n.coef <- length(coef(goric_obj))
-  nr.es <- length(pop.est)/n.coef
 
 
   #n.coef <- length(b.ratios) # If one of the 2 dim's is 1 - always the case in lm?
@@ -75,6 +74,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
     VCOV <- eval(parse(text = vcov_text))
     # Note possible to determine samplesize now (unless part of input), so:
     other.N = NULL
+    samplesize <- "Could not be retrieved from the input."
   }else{
     if(is.null(pop.est)){
       pop.est <- coef(goric_obj$model.org) # or: goric_obj$model.org$coefficients
@@ -84,6 +84,8 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
     VCOV <- vcov(goric_obj$model.org)
     samplesize <- length(goric_obj$model.org$residuals) # If one of the 2 dim's is 1 - always the case in lm?
   }
+  #
+  nr.es <- length(pop.est)/n.coef
   #
   if(!is.null(other.N)){
     VCOV <- VCOV * samplesize / other.N
@@ -102,7 +104,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   for(teller.es in 1:nr.es){
     #teller.es = 1
 
-    est <- mvrnorm(iter, pop.est[teller.es,], VCOV)
+    est <- mvrnorm(n = iter, as.vector(pop.est[teller.es,]), VCOV)
     #
     # Test
     # var(est)
