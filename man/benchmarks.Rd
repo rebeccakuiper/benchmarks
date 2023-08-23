@@ -17,7 +17,7 @@ benchmarks(
 
 \item{pop.est}{Optional. A nr.es-times-k matrix of population values for the k parameters of interest, leading to nr.es sets of population values. By default, pop.est = NULL; then, the estimates from the sample will be used. Benchmarks will be calculated for each of these value(s).}
 
-\item{other.N}{Optional. A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.}
+\item{other.N}{Optional (which only works if the goric object is based on a fit object and not on estimates and their covariance matrix). A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.}
 
 \item{iter}{Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.}
 

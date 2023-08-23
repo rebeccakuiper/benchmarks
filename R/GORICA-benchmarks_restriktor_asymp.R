@@ -4,7 +4,7 @@
 #'
 #' @param goric_obj An object from the goric function from the restriktor package. In this function, the GORIC or GORICA can be applied to every type of statistical model.
 #' @param pop.est Optional. A nr.es-times-k matrix of population values for the k parameters of interest, leading to nr.es sets of population values. By default, pop.est = NULL; then, the estimates from the sample will be used. Benchmarks will be calculated for each of these value(s).
-#' @param other.N Optional. A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.
+#' @param other.N Optional (which only works if the goric object is based on a fit object and not on estimates and their covariance matrix). A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.
 #' @param iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.
 #' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.
 #'
@@ -60,15 +60,30 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   nr.es <- length(pop.est)/n.coef
 
 
-  if(is.null(pop.est)){
-    pop.est <- coef(goric_obj$model.org) # or: goric_obj$model.org$coefficients
-    # TO DO model.org bestaat alleen als niet est+vcov input!
-  }
-  colnames(pop.est) <- names(goric_obj$model.org$coefficients)
-
   #n.coef <- length(b.ratios) # If one of the 2 dim's is 1 - always the case in lm?
-  VCOV <- vcov(goric_obj$model.org)
-  samplesize <- length(goric_obj$model.org$residuals) # If one of the 2 dim's is 1 - always the case in lm?
+  if(is.null(goric_obj$model.org)){
+    est_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$b.unrestr")
+    est_sample <- eval(parse(text = est_text))
+    if(is.null(pop.est)){
+      pop.est <- est
+    }
+    colnames(pop.est) <- names(est_sample)
+    #
+    #vcov_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$CON$VCOV")
+    vcov_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$Sigma")
+    VCOV <- eval(parse(text = vcov_text))
+    # Note possible to determine samplesize now (unless part of input), so:
+    other.N = NULL
+  }else{
+    if(is.null(pop.est)){
+      pop.est <- coef(goric_obj$model.org) # or: goric_obj$model.org$coefficients
+    }
+    colnames(pop.est) <- names(goric_obj$model.org$coefficients)
+    #
+    VCOV <- vcov(goric_obj$model.org)
+    samplesize <- length(goric_obj$model.org$residuals) # If one of the 2 dim's is 1 - always the case in lm?
+  }
+  #
   if(!is.null(other.N)){
     VCOV <- VCOV * samplesize / other.N
     samplesize <- other.N
@@ -102,7 +117,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
       pop.est.CI <- est[i,]
       # Apply GORIC #
       #set.seed(123)
-      results.goric <- goric(pop.est.CI, VCOV = VCOV, hypotheses = hypos, comparison = goric_obj$comparison, type = "gorica")
+      results.goric <- goric(pop.est.CI, VCOV = VCOV, constraints = hypos, comparison = goric_obj$comparison, type = "gorica")
 
       goric[i] <- results.goric$result[PrefHypo,7]
       gw[,i] <- results.goric$ratio.gw[PrefHypo,]
@@ -144,8 +159,13 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
       # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
       # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
       #if()
-      fit_data <- goric_obj$model.org
-      results.goric_pref <- goric(fit_data, hypotheses = list(H_pref = H_pref), comparison = "complement", type = "goric")
+      #
+      if(is.null(goric_obj$model.org)){
+        results.goric_pref <- goric(est_sample, VCOV = VCOV, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+      }else{
+        fit_data <- goric_obj$model.org
+        results.goric_pref <- goric(fit_data, constraints = list(H_pref = H_pref), comparison = "complement", type = "goric")
+      }
       error.prob <- results.goric_pref$result$goric.weights[2]
     }
   }
