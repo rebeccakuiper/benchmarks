@@ -57,10 +57,6 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   PrefHypo <- which.max(goric_obj$result[,7]) #which.max(goric_obj$result$goric.weights)
   pref.hypo <- goric_obj$result$model[PrefHypo]
 
-  n.coef <- length(coef(goric_obj))
-
-
-  #n.coef <- length(b.ratios) # If one of the 2 dim's is 1 - always the case in lm?
   if(is.null(goric_obj$model.org)){
     est_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$b.unrestr")
     est_sample <- eval(parse(text = est_text))
@@ -81,10 +77,13 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
     }
     colnames(pop.est) <- names(goric_obj$model.org$coefficients)
     #
+    #n.coef <- length(coef(goric_obj))
+    #
     VCOV <- vcov(goric_obj$model.org)
     samplesize <- length(goric_obj$model.org$residuals) # If one of the 2 dim's is 1 - always the case in lm?
   }
   #
+  n.coef <- dim(pop.est)[2]
   nr.es <- length(pop.est)/n.coef
   #
   if(!is.null(other.N)){
