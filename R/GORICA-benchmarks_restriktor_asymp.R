@@ -65,7 +65,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
     est_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$b.unrestr")
     est_sample <- eval(parse(text = est_text))
     if(is.null(pop.est)){
-      pop.est <- est
+      pop.est <- est_sample
     }
     colnames(pop.est) <- names(est_sample)
     #
