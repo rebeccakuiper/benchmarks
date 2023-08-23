@@ -63,11 +63,11 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   #n.coef <- length(b.ratios) # If one of the 2 dim's is 1 - always the case in lm?
   if(is.null(goric_obj$model.org)){
     est_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$b.unrestr")
-    est_sample <- eval(parse(text = est_text))
+    est_sample <- matrix(eval(parse(text = est_text)), nrow=1)
     if(is.null(pop.est)){
       pop.est <- est_sample
     }
-    names(pop.est) <- names(est_sample)
+    colnames(pop.est) <- colnames(est_sample)
     #
     #vcov_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$CON$VCOV")
     vcov_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$Sigma")
