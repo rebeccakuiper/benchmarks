@@ -45,7 +45,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
   #other.N <- NULL
   # seed.value <- 123
   # iter <- 1000
-
+  # pop.est = NULL; other.N = NULL; iter = 3; seed.value = 123
 
   # Check:
   if(!any(class(goric_obj) == "con_goric")){
@@ -163,10 +163,10 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
       #if()
       #
       if(is.null(goric_obj$model.org)){
-        results.goric_pref <- goric(est_sample, VCOV = VCOV, hypotheses = list(H_pref = H_pref), comparison = "complement", type = "goric")
+        results.goric_pref <- goric(est_sample, VCOV = VCOV, hypotheses = list(H_pref = H_pref), comparison = "complement", type = goric_obj$type)
       }else{
         fit_data <- goric_obj$model.org
-        results.goric_pref <- goric(fit_data, hypotheses = list(H_pref = H_pref), comparison = "complement", type = "goric")
+        results.goric_pref <- goric(fit_data, hypotheses = list(H_pref = H_pref), comparison = "complement", type = goric_obj$type)
       }
       error.prob <- results.goric_pref$result$goric.weights[2]
     }
