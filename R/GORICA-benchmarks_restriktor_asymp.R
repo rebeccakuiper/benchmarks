@@ -119,7 +119,10 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
       pop.est.CI <- est[i,]
       # Apply GORIC #
       #set.seed(123)
-      results.goric <- goric(pop.est.CI, VCOV = VCOV, hypotheses = hypos, comparison = goric_obj$comparison, type = "gorica")
+      results.goric <- goric(pop.est.CI, VCOV = VCOV,
+                             hypotheses = hypos,
+                             comparison = goric_obj$comparison,
+                             type = "gorica")
 
       goric[i] <- results.goric$result[PrefHypo,7]
       gw[,i] <- results.goric$ratio.gw[PrefHypo,]
@@ -163,10 +166,16 @@ benchmarks <- function(goric_obj, pop.est = NULL, other.N = NULL, iter = 1000, s
       #if()
       #
       if(is.null(goric_obj$model.org)){
-        results.goric_pref <- goric(est_sample, VCOV = VCOV, hypotheses = list(H_pref = H_pref), comparison = "complement", type = goric_obj$type)
+        results.goric_pref <- goric(est_sample, VCOV = VCOV,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = goric_obj$type)
       }else{
         fit_data <- goric_obj$model.org
-        results.goric_pref <- goric(fit_data, hypotheses = list(H_pref = H_pref), comparison = "complement", type = goric_obj$type)
+        results.goric_pref <- goric(fit_data,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = goric_obj$type)
       }
       error.prob <- results.goric_pref$result$goric.weights[2]
     }
