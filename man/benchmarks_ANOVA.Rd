@@ -6,8 +6,9 @@
 \usage{
 benchmarks_ANOVA(
   goric_obj,
-  pop.es = 0.2,
+  pop.es = 0,
   ratio.pop.means = NULL,
+  N = NULL,
   other.N = NULL,
   iter = 1000,
   seed.value = 123
@@ -16,9 +17,11 @@ benchmarks_ANOVA(
 \arguments{
 \item{goric_obj}{An object from the goric function from the restriktor package. In this function, it is assumed that the GORIC is applied to an ANOVA with k group means.}
 
-\item{pop.es}{Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = .2. Benchmarks will be calculated for each of these value(s).}
+\item{pop.es}{Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = 0. Benchmarks will be calculated for each of these value(s).}
 
 \item{ratio.pop.means}{Optional. A k-times-1 vector, denoting the relative difference between the k group means. Note that a ratio of c(3,2,1) gives the same as c(1,0,-1), since the consecutive relative differences are 1 in both ratios. every time minus same difference. By default, ratio.pop.means = NULL. In that case, the relative differences from the data are used.}
+
+\item{N}{Needed (and only used) if goric object is based on estimates and their covariance matrix (instead of on a model / fit object). A k-times-1 vector or a scalar to denote the group sizes. If you specify a scalar, it is assumed that each group is of that size. By default, N = NULL.}
 
 \item{other.N}{Optional. A k-times-1 vector or a scalar to denote the group sizes, if you like to use others than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). If you specify a scalar, it is assumed that each group is of that size. By default, other.N = NULL. In that case, the group sizes from the data will be used.}
 

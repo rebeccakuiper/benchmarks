@@ -3,8 +3,9 @@
 #' This function calculates, for an ANOVA model, case-specific benchmarks for the GORIC(A) weight and ratio of weights of the preferred hypothesis, assuming user-specified population parameter estimates.
 #'
 #' @param goric_obj An object from the goric function from the restriktor package. In this function, it is assumed that the GORIC is applied to an ANOVA with k group means.
-#' @param pop.es Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = .2. Benchmarks will be calculated for each of these value(s).
+#' @param pop.es Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = 0. Benchmarks will be calculated for each of these value(s).
 #' @param ratio.pop.means Optional. A k-times-1 vector, denoting the relative difference between the k group means. Note that a ratio of c(3,2,1) gives the same as c(1,0,-1), since the consecutive relative differences are 1 in both ratios. every time minus same difference. By default, ratio.pop.means = NULL. In that case, the relative differences from the data are used.
+#' @param N Needed (and only used) if goric object is based on estimates and their covariance matrix (instead of on a model / fit object). A k-times-1 vector or a scalar to denote the group sizes. If you specify a scalar, it is assumed that each group is of that size. By default, N = NULL.
 #' @param other.N Optional. A k-times-1 vector or a scalar to denote the group sizes, if you like to use others than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). If you specify a scalar, it is assumed that each group is of that size. By default, other.N = NULL. In that case, the group sizes from the data will be used.
 #' @param iter Optional. A scalar denoting the number of iterations used to determine the benchmarks weights. By default, iter = 1000. Notable, the higher iter, the longer the computation time.
 #' @param seed.value. Optional. A scalar denoting the seed value. By default, seed.value = 123. By changing this value, you can inspect the sensitivity of the benchmarks -- which should not be present; if it is, you should increase the value of iter.
@@ -44,36 +45,65 @@
 #'
 
 
-benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, other.N = NULL, iter = 1000, seed.value = 123) {
+benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = NULL, other.N = NULL, iter = 1000, seed.value = 123) {
 
   # When testing:
-  #goric_obj <- My_goric_obj # results1
-  #pop.es <- 0.2 # c(0, .2) # c(0, .2, .5, .8)
-  #ratio.pop.means <- c(3, 2, 1)
+  #
+  #goric_obj <- My_goric_obj # goric_obj <- results1
+  # goric_obj <- output_gorica_c; N <- 30 # N <- NULLrep(30,5)
+  # goric_obj <- output_gorica_c_fit; N <- NULL
+  #
+  #pop.es <- 0.2 # pop.es <- c(0, .2) # pop.es <- c(0, .2, .5, .8)
+  #ratio.pop.means <- c(3, 2, 1) # ratio.pop.means <- NULL
+  #N <- NULL
   #other.N <- NULL
   # seed.value <- 123
   # iter <- 100
+  # library(fastDummies)
 
 
   # Check:
   if(!any(class(goric_obj) == "con_goric")){
     return(paste0("The argument goric_obj should be of class con_goric (a goric object from restriktor); it belongs to ", class(goric_obj)))
   }
-  # TO DO werkt nu niet als class gelijk is aan: "con_gorica" "con_goric"
-  # Dan nl model.org niet bekend... lastig met var.e ook
-  # Test met veel $ $ of het wel lukt, zie   goric_obj$objectNames$ ...
+
 
   # number of groups
   n.coef <- length(coef(goric_obj))
 
-  # subject per group
-  samplesize <- summary(goric_obj$model.org$model[,2])
 
   # ES and ratio in data
-  # TO DO $b.unrestr en $Sigma zouden het ws moeten zijn, maar die geven dan NULL?
-  # Maar in $objectList hebben ze wel waardes....
-  means <- coef(goric_obj$model.org) # TO DO model.org bestaat alleen als niet est+vcov input!
-  var.e_data <- (sum(goric_obj$model.org$residuals^2) / (sum(samplesize) - n.coef)) # Dit werkt dan ook niet!
+  #
+  if(is.null(goric_obj$model.org)){
+    # Number of subjects per group
+    if(length(N) == 1){
+      samplesize <- rep(N, n.coef)
+    }else{
+      samplesize <- N
+    }
+
+    # Unrestricted means
+    est_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$b.unrestr")
+    means <- eval(parse(text = est_text))
+
+    # residual variance
+    vcov_text <- paste0("goric_obj$objectList$", goric_obj$objectNames, "$Sigma")
+    VCOV <- eval(parse(text = vcov_text))
+    var.e_data_mx <- VCOV * samplesize
+    var.e_data <- var.e_data_mx[1,1] # TO DO check always same elements on diagonal?
+
+  }else{
+    # Number of subjects per group
+    samplesize <- summary(goric_obj$model.org$model[,2])
+
+    # Unrestricted means
+    means <- coef(goric_obj$model.org)
+
+    # residual variance
+    var.e_data <- (sum(goric_obj$model.org$residuals^2) / (sum(samplesize) - n.coef))
+  }
+
+
   ES_data <- (1/sqrt(var.e_data)) * sqrt((1/n.coef) * sum((means - mean(means))^2))
   #
   ratio_data <- rep(NA, n.coef)
@@ -111,7 +141,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   # Error variance
   # var.e <- var(goric_obj$model.org$residuals)
   # var.e <- 1
-  var.e <- (sum(goric_obj$model.org$residuals^2) / (sum(samplesize) - n.coef))
+  var.e <- var.e_data
   #
   # When determining pop. means, value does not matter: works exactly the same
   # choose first or last, then pop. means comparable to sample estimates
@@ -174,7 +204,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
   D <- as.factor(D_)
   sample$D <- D
   sample <- dummy_cols(sample, select_columns = 'D')
-
+  colnames(sample)[-1] <- names(coef(goric_obj))
 
 
   nr.iter <- iter
@@ -201,9 +231,11 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       #
       # Generate data
       sample$y <- as.matrix(sample[,2:(1+n.coef)]) %*% matrix(means_pop, nrow = n.coef) + epsilon
+      df <- data.frame(y = sample$y, sample[,2:(1+n.coef)])
 
       # Obtain fit
-      fit <- lm(y ~ 0 + D, data=sample)
+      fit <- NULL
+      fit <- lm(y ~ 0 + ., data = df)
       #fit
 
 
@@ -269,15 +301,19 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = .2, ratio.pop.means = NULL, oth
       # # TO DO bepaal ook quantiles voor error prob - kan obv bovenstaande!
     }else{
       H_pref <- hypos[[PrefHypo]]
-      # Use goric, because ANOVA
-      # TO DO what if started with est + cov mx and goric? Dan based on type of input dat gebruiken??
-      # Lukt me niet om $b.unrestr en $Sigma te gebruiken...
-      #if()
-      fit_data <- goric_obj$model.org
-      results.goric_pref <- goric(fit_data,
-                                  hypotheses = list(H_pref = H_pref),
-                                  comparison = "complement",
-                                  type = "goric")
+      if(is.null(goric_obj$model.org)){
+        results.goric_pref <- goric(means, VCOV = VCOV,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = goric_obj$type)
+      }else{
+        fit_data <- goric_obj$model.org
+        results.goric_pref <- goric(fit_data,
+                                    hypotheses = list(H_pref = H_pref),
+                                    comparison = "complement",
+                                    type = goric_obj$type)
+        # Use same type as in original model (could do goric)
+      }
       error.prob <- results.goric_pref$result$goric.weights[2]
       #
       # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
