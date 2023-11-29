@@ -52,6 +52,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
   #goric_obj <- My_goric_obj # goric_obj <- results1
   # goric_obj <- output_gorica_c; N <- 30 # N <- NULLrep(30,5)
   # goric_obj <- output_gorica_c_fit; N <- NULL
+  # goric_obj <- results_1c
   #
   #pop.es <- 0.2 # pop.es <- c(0, .2) # pop.es <- c(0, .2, .5, .8)
   #ratio.pop.means <- c(3, 2, 1) # ratio.pop.means <- NULL
@@ -215,6 +216,8 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
   #
   CI.benchmarks_all <- NULL
   CI.benchmarks_gw_all <- NULL
+  CI.benchmarks_lw_all <- NULL
+  CI.benchmarks_absLL_all <- NULL
   for(teller.es in 1:nr.es){
     #teller.es = 1
     means_pop <- means_pop_all[teller.es, ]
@@ -223,6 +226,8 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
     #covmx_est <- array(NA, dim = c(n.coef, n.coef, nr.iter))
     goric <- rep(NA, nr.iter)
     gw <- matrix(NA, nrow = nr.hypos, ncol = iter)
+    lw <- matrix(NA, nrow = nr.hypos, ncol = iter)
+    absLL <- matrix(NA, nrow = nr.hypos, ncol = iter)
     for(i in 1:nr.iter){
       # teller.es = 1; i = 1
 
@@ -266,6 +271,8 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
 
       goric[i] <- results.goric$result[PrefHypo,7]
       gw[,i] <- results.goric$ratio.gw[PrefHypo,]
+      lw[,i] <- results.goric$ratio.lw[PrefHypo,]
+      absLL[,i] <- abs(results.goric$result$loglik[PrefHypo] - results.goric$result$loglik)
     }
 
     CI.benchmarks_goric <- matrix(c(goric_obj$result[PrefHypo,7], quantile(goric, quant)), nrow = 1) # sample weight with calculated quantiles/percentiles
@@ -280,14 +287,36 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
     colnames(CI.benchmarks_gw) <- names_quant
     rownames(CI.benchmarks_gw) <- paste(pref.hypo, names(goric_obj$ratio.gw[PrefHypo,]))
     #
+    CI.benchmarks_lw <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
+    CI.benchmarks_lw[,1] <- goric_obj$ratio.lw[PrefHypo,] # so in sample
+    for(j in 1:nr.hypos){
+      CI.benchmarks_lw[j,2:(1+length(quant))] <- quantile(lw[j,], quant)
+    }
+    colnames(CI.benchmarks_lw) <- names_quant
+    rownames(CI.benchmarks_lw) <- paste(pref.hypo, names(goric_obj$ratio.lw[PrefHypo,]))
+    #
+    CI.benchmarks_absLL <- matrix(NA, nrow = nr.hypos, ncol = 1+length(quant))
+    CI.benchmarks_absLL[,1] <- abs(goric_obj$result$loglik[PrefHypo] - goric_obj$result$loglik) # so in sample
+    for(j in 1:nr.hypos){
+      CI.benchmarks_absLL[j,2:(1+length(quant))] <- quantile(absLL[j,], quant)
+    }
+    colnames(CI.benchmarks_absLL) <- names_quant
+    rownames(CI.benchmarks_absLL) <- paste(pref.hypo, names(goric_obj$ratio.lw[PrefHypo,]))
+    #
     #CI.benchmarks_goric
     #CI.benchmarks_gw
+    #CI.benchmarks_lw
+    #CI.benchmarks_absLL
 
     name <- paste0("pop.es = ", pop.es[teller.es])
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
     CI.benchmarks_gw_all[[name]] <- CI.benchmarks_gw
+    CI.benchmarks_lw_all[[name]] <- CI.benchmarks_lw
+    CI.benchmarks_absLL_all[[name]] <- CI.benchmarks_absLL
     #CI.benchmarks_all
     #CI.benchmarks_gw_all
+    #CI.benchmarks_lw_all
+    #CI.benchmarks_absLL_all
 
   }
 
@@ -341,7 +370,9 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
                 res.var.pop = var.e,
                 pref.hypo = pref.hypo, error.prob.pref.hypo = error.prob,
                 benchmarks.weight = CI.benchmarks_all,
-                benchmarks.ratios = CI.benchmarks_gw_all)
+                benchmarks.ratios = CI.benchmarks_gw_all,
+                benchmarks.LLratios = CI.benchmarks_lw_all,
+                benchmarks.absLL = CI.benchmarks_absLL_all)
 
   class(final) <- c("benchmarks", "list")
   final

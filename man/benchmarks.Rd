@@ -7,6 +7,7 @@
 benchmarks(
   goric_obj,
   pop.est = NULL,
+  N = NULL,
   other.N = NULL,
   iter = 1000,
   seed.value = 123
@@ -16,6 +17,8 @@ benchmarks(
 \item{goric_obj}{An object from the goric function from the restriktor package. In this function, the GORIC or GORICA can be applied to every type of statistical model.}
 
 \item{pop.est}{Optional. A nr.es-times-k matrix of population values for the k parameters of interest, leading to nr.es sets of population values. By default, pop.est = NULL; then, the estimates from the sample will be used. Benchmarks will be calculated for each of these value(s).}
+
+\item{N}{Needed (and only used) if goric object is based on estimates and their covariance matrix (instead of on a model / fit object) and other.N is not NULL. A k-times-1 vector or a scalar to denote the (total) sample sizes. By default, N = NULL.}
 
 \item{other.N}{Optional (which only works if the goric object is based on a fit object and not on estimates and their covariance matrix). A scalar to denote the (total) sample sizes, if you like to use another than used in the data. You could use this, for instance, to see to which values the GORIC(A) weights will converge (and thus to see the maximum value of the weights). By default, other.N = NULL. In that case, the sample size from the data will be used.}
 
