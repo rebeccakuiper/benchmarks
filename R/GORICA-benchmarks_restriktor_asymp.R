@@ -179,7 +179,7 @@ benchmarks <- function(goric_obj, pop.est = NULL, N = NULL, other.N = NULL, iter
     #CI.benchmarks_lw
     #CI.benchmarks_absLL
 
-    name <- paste0("nr.pop.est = ", teller.es)
+    name <- paste0("pop.est.nr. = ", teller.es)
     CI.benchmarks_all[[name]] <- CI.benchmarks_goric
     CI.benchmarks_gw_all[[name]] <- CI.benchmarks_gw
     CI.benchmarks_lw_all[[name]] <- CI.benchmarks_lw
