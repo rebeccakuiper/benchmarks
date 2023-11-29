@@ -58,7 +58,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
   #N <- NULL
   #other.N <- NULL
   # seed.value <- 123
-  # iter <- 100
+  # iter <- 3 # iter <- 100
   # library(fastDummies)
 
 
@@ -234,7 +234,7 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
       df <- data.frame(y = sample$y, sample[,2:(1+n.coef)])
 
       # Obtain fit
-      fit <- NULL
+      #fit <- NULL
       fit <- lm(y ~ 0 + ., data = df)
       #fit
 
@@ -293,12 +293,16 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
 
 
   # Error probability based on complement of preferred hypothesis in data
+
   if(nr.hypos == 2 & goric_obj$comparison == "complement"){
-    error.prob <- 1 - goric_obj$result$goric.weights[PrefHypo]
+    if(goric_obj$type == 'goric'){
+      error.prob <- 1 - goric_obj$result$goric.weights[PrefHypo]
+    }else{
+      error.prob <- 1 - goric_obj$result$gorica.weights[PrefHypo]
+    }
   }else{
-    if(PrefHypo == nr.hypos){
-      error.prob <- "The failsafe is preferred..."
-      # # TO DO bepaal ook quantiles voor error prob - kan obv bovenstaande!
+    if(PrefHypo == nr.hypos & goric_obj$comparison == "unconstrained"){
+      error.prob <- "The unconstrained (i.e., the failsafe) containing all possible orderings is preferred..."
     }else{
       H_pref <- hypos[[PrefHypo]]
       if(is.null(goric_obj$model.org)){
@@ -314,12 +318,16 @@ benchmarks_ANOVA <- function(goric_obj, pop.es = 0, ratio.pop.means = NULL, N = 
                                     type = goric_obj$type)
         # Use same type as in original model (could do goric)
       }
-      error.prob <- results.goric_pref$result$goric.weights[2]
-      #
-      # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
-      # Is het zinnig? Op zich zou error prob al zinnig moeten zijn immers....
+      if(goric_obj$type == 'goric'){
+        error.prob <- results.goric_pref$result$goric.weights[2]
+      }else{
+        error.prob <- results.goric_pref$result$gorica.weights[2]
+      }
     }
   }
+  #
+  # TO DO bepaal ook quantiles voor error prob. Ws verwerken in bovenstaande!
+  # Is het zinnig? Op zich zou error prob al zinnig moeten zijn immers....
 
 
 
