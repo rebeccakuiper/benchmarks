@@ -161,10 +161,12 @@ benchmarks <- function(goric_obj, pop.est = NULL, N = NULL, other.N = NULL, iter
     #
     CI.benchmarks_gw[,1] <- goric_obj$ratio.gw[PrefHypo,] # so in sample
     CI.benchmarks_lw[,1] <- goric_obj$ratio.lw[PrefHypo,] # so in sample
-    if(goric_obj$ratio.lw[PrefHypo,] >= 1){
-      CI.benchmarks_lw_ge1[,1] <- goric_obj$ratio.lw[PrefHypo,] # so in sample
-    }else{
-      CI.benchmarks_lw_ge1[,1] <- 1/goric_obj$ratio.lw[PrefHypo,] # so in sample
+    for(j in 1:nr.hypos){
+      if(goric_obj$ratio.lw[PrefHypo,j] >= 1){
+        CI.benchmarks_lw_ge1[j,1] <- goric_obj$ratio.lw[PrefHypo,j] # so in sample
+      }else{
+        CI.benchmarks_lw_ge1[j,1] <- 1/goric_obj$ratio.lw[PrefHypo,j] # so in sample
+      }
     }
     CI.benchmarks_ld[,1] <- (goric_obj$result$loglik[PrefHypo] - goric_obj$result$loglik) # so in sample
     CI.benchmarks_ld_ge0[,1] <- abs(goric_obj$result$loglik[PrefHypo] - goric_obj$result$loglik) # so in sample
