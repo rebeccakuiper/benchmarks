@@ -17,7 +17,7 @@ benchmarks_ANOVA(
 \arguments{
 \item{goric_obj}{An object from the goric function from the restriktor package. In this function, it is assumed that the GORIC is applied to an ANOVA with k group means.}
 
-\item{pop.es}{Optional. A scalar or vector of population Cohen's d (effect size) value. By default, pop.es = 0. Benchmarks will be calculated for each of these value(s).}
+\item{pop.es}{Optional. A scalar or vector of population Cohen's f (effect size) value. By default, pop.es = 0. Benchmarks will be calculated for each of these value(s).}
 
 \item{ratio.pop.means}{Optional. A k-times-1 vector, denoting the relative difference between the k group means. Note that a ratio of c(3,2,1) gives the same as c(1,0,-1), since the consecutive relative differences are 1 in both ratios. every time minus same difference. By default, ratio.pop.means = NULL. In that case, the relative differences from the data are used.}
 
@@ -43,7 +43,7 @@ This function calculates, for an ANOVA model, case-specific benchmarks for the G
 goric.obj <- My_goric_obj
 
 # Input w.r.t. population values
-pop.es <- c(0, .2, .5, .8)
+pop.es <- c(0, .1, .25, .4) # Corresponding to Cohen 1992
 ratio.pop.means <- c(3,2,1)
 
 # Extra
@@ -57,7 +57,7 @@ benchmarks_goric$benchmarks.ratios
 
 # An example to see what maximum value of the weights is.
 # If there is a maximum, then there is overlap in the hypotheses (see guidelines).
-pop.es <- c(.2, .5, .8)
+pop.es <- c(.1, .25, .4)
 benchmarks_goric_1000 <- benchmarks_ANOVA(goric.obj, pop.es, ratio.pop.means, other.N = 1000, iter = iter)
 benchmarks_goric_1000$benchmarks.weight
 benchmarks_goric_1000$benchmarks.ratios
